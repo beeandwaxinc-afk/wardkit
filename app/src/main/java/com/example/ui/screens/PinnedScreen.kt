@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -55,11 +57,13 @@ fun PinnedScreen(
     onUnpinCalculator: (String) -> Unit,
     onOpenKitCard: (String) -> Unit,
     onUnpinKitCard: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState()
 ) {
     val isDark = LocalMedWheelExtras.current.isDark
 
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxSize()
             .testTag("pinned_screen_list"),
@@ -69,7 +73,7 @@ fun PinnedScreen(
         // ====================================================================
         // SECTION 1: UNIFIED PINNED (Calculators + Kit Reference Cards)
         // ====================================================================
-        item(key = "header_pinned") {
+        item(key = "header_pinned", contentType = "pinned_header") {
             Text(
                 text = stringResource(R.string.pinned_section_title),
                 style = MaterialTheme.typography.labelLarge.copy(
@@ -82,7 +86,7 @@ fun PinnedScreen(
         }
 
         if (pinnedCalculators.isEmpty() && pinnedKitCards.isEmpty()) {
-            item(key = "pinned_empty") {
+            item(key = "pinned_empty", contentType = "pinned_empty") {
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -99,7 +103,11 @@ fun PinnedScreen(
                 }
             }
         } else {
-            items(pinnedKitCards, key = { "pinned_kit_${it.id}" }) { card ->
+            items(
+                items = pinnedKitCards,
+                key = { "pinned_kit_${it.id}" },
+                contentType = { "pinned_item_card" }
+            ) { card ->
                 val block = KitRegistry.getBlock(card.blockId)
                 val accent = if (isDark) block.palette.darkPrimary else block.palette.lightPrimary
                 UnifiedPinnedItemCard(
@@ -117,7 +125,11 @@ fun PinnedScreen(
                 )
             }
 
-            items(pinnedCalculators, key = { "pinned_calc_${it.id}" }) { calc ->
+            items(
+                items = pinnedCalculators,
+                key = { "pinned_calc_${it.id}" },
+                contentType = { "pinned_item_card" }
+            ) { calc ->
                 val dept = DepartmentRegistry.get(calc.departmentId)
                 val accent = if (isDark) dept.palette.darkPrimary else dept.palette.lightPrimary
                 UnifiedPinnedItemCard(
@@ -139,7 +151,7 @@ fun PinnedScreen(
         // ====================================================================
         // SECTION 2: MOST USED (Top 6 auto-ranked calculators by usage count)
         // ====================================================================
-        item(key = "header_most_used") {
+        item(key = "header_most_used", contentType = "pinned_header") {
             Spacer(Modifier.height(10.dp))
             Text(
                 text = stringResource(R.string.most_used_section_title),
@@ -153,7 +165,7 @@ fun PinnedScreen(
         }
 
         if (mostUsedCalculators.isEmpty()) {
-            item(key = "most_used_empty") {
+            item(key = "most_used_empty", contentType = "pinned_empty") {
                 Surface(
                     shape = RoundedCornerShape(22.dp),
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -170,7 +182,11 @@ fun PinnedScreen(
                 }
             }
         } else {
-            items(mostUsedCalculators, key = { "used_${it.first.id}" }) { (calc, count) ->
+            items(
+                items = mostUsedCalculators,
+                key = { "used_${it.first.id}" },
+                contentType = { "pinned_item_card" }
+            ) { (calc, count) ->
                 val dept = DepartmentRegistry.get(calc.departmentId)
                 val accent = if (isDark) dept.palette.darkPrimary else dept.palette.lightPrimary
                 UnifiedPinnedItemCard(
@@ -189,7 +205,7 @@ fun PinnedScreen(
             }
         }
 
-        item(key = "bottom_spacer") {
+        item(key = "bottom_spacer", contentType = "pinned_spacer") {
             Spacer(Modifier.height(12.dp))
         }
     }

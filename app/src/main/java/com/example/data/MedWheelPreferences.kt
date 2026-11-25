@@ -4,8 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 
 class MedWheelPreferences(context: Context) {
-    private val prefs: SharedPreferences =
-        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+
+    // Lazily opened so initialization never performs disk I/O on the main thread
+    private val prefs: SharedPreferences by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     fun loadThemeMode(): ThemeMode =
         ThemeMode.fromKey(prefs.getString(KEY_THEME_MODE, ThemeMode.SYSTEM.key))
@@ -32,6 +36,11 @@ class MedWheelPreferences(context: Context) {
             }
         }
         return map
+    }
+
+    fun saveUsageCount(calculatorId: String, count: Int) {
+        val key = "$PREFIX_USAGE$calculatorId"
+        prefs.edit().putInt(key, count).apply()
     }
 
     fun incrementUsageCount(calculatorId: String): Map<String, Int> {

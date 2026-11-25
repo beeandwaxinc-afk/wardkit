@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Biotech
@@ -67,19 +69,20 @@ import com.example.ui.theme.LocalMedWheelExtras
 @Composable
 fun KitHomeScreen(
     onOpenBlock: (KitBlockId) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState(),
+    tier1Rows: List<List<KitBlockDef>> = KitRegistry.hospitalEssentialBlocks.chunked(2),
+    tier2Rows: List<List<KitBlockDef>> = KitRegistry.specialtyBlocks.chunked(2)
 ) {
-    val tier1Rows = KitRegistry.hospitalEssentialBlocks.chunked(2)
-    val tier2Rows = KitRegistry.specialtyBlocks.chunked(2)
-
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxSize()
             .testTag("kit_home_bento_grid"),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item(key = "kit_header") {
+        item(key = "kit_header", contentType = "kit_header") {
             Column(
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -103,7 +106,7 @@ fun KitHomeScreen(
         // ====================================================================
         // TIER 1: HOSPITAL ESSENTIALS (2x2 SYMMETRICAL EQUAL BENTO GRID)
         // ====================================================================
-        item(key = "tier1_header") {
+        item(key = "tier1_header", contentType = "kit_section_header") {
             Text(
                 text = "HOSPITAL ESSENTIALS",
                 style = MaterialTheme.typography.labelLarge.copy(
@@ -119,7 +122,7 @@ fun KitHomeScreen(
         }
 
         tier1Rows.forEachIndexed { rowIdx, rowBlocks ->
-            item(key = "tier1_row_$rowIdx") {
+            item(key = "tier1_row_$rowIdx", contentType = "kit_bento_row") {
                 EqualBentoPairRow(
                     blocks = rowBlocks,
                     onOpenBlock = onOpenBlock
@@ -130,7 +133,7 @@ fun KitHomeScreen(
         // ====================================================================
         // TIER 2: SPECIALTIES (EQUAL 2-COLUMN A–Z BENTO GRID)
         // ====================================================================
-        item(key = "tier2_header") {
+        item(key = "tier2_header", contentType = "kit_section_header") {
             Spacer(Modifier.height(6.dp))
             Text(
                 text = "SPECIALTIES",
@@ -147,7 +150,7 @@ fun KitHomeScreen(
         }
 
         tier2Rows.forEachIndexed { rowIdx, rowBlocks ->
-            item(key = "tier2_row_$rowIdx") {
+            item(key = "tier2_row_$rowIdx", contentType = "kit_bento_row") {
                 EqualBentoPairRow(
                     blocks = rowBlocks,
                     onOpenBlock = onOpenBlock
@@ -155,7 +158,7 @@ fun KitHomeScreen(
             }
         }
 
-        item(key = "kit_bottom_spacer") {
+        item(key = "kit_bottom_spacer", contentType = "kit_spacer") {
             Spacer(Modifier.height(14.dp))
         }
     }

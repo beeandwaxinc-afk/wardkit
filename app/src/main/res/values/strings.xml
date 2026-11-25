@@ -22,7 +22,7 @@
     <string name="drawer_departments_header">Departments (%1$d Tools)</string>
     <string name="drawer_formulas_header">Formulas &amp; Clinical Pearls</string>
     <string name="drawer_active_calculator_badge">ACTIVE CALCULATOR</string>
-    <string name="drawer_version_line">Ward Kit v7.0 · 100% Offline</string>
+    <string name="drawer_version_line">Ward Kit v7.1 · 100% Offline</string>
     <string name="drawer_disclaimer_title">Info &amp; Clinical Disclaimer</string>
     <string name="drawer_disclaimer_body">For clinical decision support and medical education; always verify calculations, doses, and ward protocols against institutional guidelines and clinical judgment before administering treatment. All 81 formulas, ER protocols, and drug dosing tools execute 100% locally on-device with zero network dependencies.</string>
     <string name="pinned_section_title">PINNED</string>

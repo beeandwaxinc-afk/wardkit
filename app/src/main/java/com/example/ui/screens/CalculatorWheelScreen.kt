@@ -1,10 +1,6 @@
 package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -40,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.CalculatorDef
-import com.example.data.CalculatorRegistry
 import com.example.data.DepartmentId
 import com.example.data.DepartmentRegistry
 import com.example.ui.components.RotaryWheel
@@ -48,6 +44,7 @@ import com.example.ui.components.RotaryWheel
 @Composable
 fun CalculatorWheelScreen(
     departmentId: DepartmentId,
+    calculators: List<CalculatorDef>,
     focusedCalculatorIndex: Int,
     onFocusedCalculatorChanged: (Int) -> Unit,
     onOpenCalculator: (String) -> Unit,
@@ -55,10 +52,11 @@ fun CalculatorWheelScreen(
     modifier: Modifier = Modifier
 ) {
     BackHandler(onBack = onBack)
+    if (calculators.isEmpty()) return
 
     val department = DepartmentRegistry.get(departmentId)
-    val calculators = CalculatorRegistry.forDepartment(departmentId)
-    val focusedCalc = calculators.getOrElse(focusedCalculatorIndex) { calculators.first() }
+    val safeIndex = focusedCalculatorIndex.coerceIn(0, calculators.lastIndex)
+    val focusedCalc = calculators[safeIndex]
     val haptic = LocalHapticFeedback.current
 
     Column(
@@ -102,22 +100,16 @@ fun CalculatorWheelScreen(
 
             Spacer(Modifier.height(10.dp))
 
-            AnimatedContent(
-                targetState = focusedCalc,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "calc_subtitle_anim"
-            ) { calc ->
-                Text(
-                    text = calc.shortSubtitle,
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 20.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = focusedCalc.shortSubtitle,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 20.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
         }
 
         // ====================================================================
@@ -129,10 +121,10 @@ fun CalculatorWheelScreen(
                 .weight(0.72f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            androidx.compose.runtime.key(departmentId) {
+            key(departmentId) {
                 RotaryWheel(
                     items = calculators,
-                    initialIndex = focusedCalculatorIndex,
+                    initialIndex = safeIndex,
                     itemHeight = 96.dp,
                     wheelTag = "calculator_wheel",
                     keySelector = { it.id },

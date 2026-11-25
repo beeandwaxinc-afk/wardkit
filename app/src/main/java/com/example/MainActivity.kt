@@ -5,15 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.MedicalServices
@@ -24,6 +22,7 @@ import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -44,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.data.CalculatorRegistry
 import com.example.data.MainTab
 import com.example.data.WheelStep
 import com.example.ui.MedWheelViewModel
@@ -69,13 +69,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private data class MainScreenRouteKey(
-    val tab: MainTab,
-    val wheelStep: WheelStep,
-    val activeCalculatorId: String?,
-    val activeKitBlockId: com.example.data.kit.KitBlockId?
-)
-
 @Composable
 fun MedWheelApp(
     viewModel: MedWheelViewModel = viewModel()
@@ -84,6 +77,12 @@ fun MedWheelApp(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
+
+    // Hoisted scroll states above the top-level tab switch so tab transitions are instant
+    // and preserve scroll positions without cold-measuring layouts from scratch.
+    val departmentWheelState = rememberLazyListState(initialFirstVisibleItemIndex = uiState.focusedDepartmentIndex)
+    val kitHomeListState = rememberLazyListState()
+    val pinnedListState = rememberLazyListState()
 
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
@@ -100,19 +99,31 @@ fun MedWheelApp(
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                MedWheelDrawerContent(
-                    themeMode = uiState.themeMode,
-                    activeCalculator = uiState.activeCalculator,
-                    onSelectTheme = { mode -> viewModel.setThemeMode(mode) },
-                    onJumpToDepartment = { deptId ->
-                        viewModel.openDepartment(deptId)
-                        scope.launch { drawerState.close() }
-                    },
-                    onJumpToCalculator = { calcId ->
-                        viewModel.openCalculator(calcId, fromPinnedOrSearch = false)
-                        scope.launch { drawerState.close() }
+                ModalDrawerSheet(
+                    modifier = Modifier.fillMaxWidth(0.86f),
+                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                ) {
+                    // Lazy Drawer Gate: never compose heavy drawer items / 81 formula accordions while closed
+                    if (drawerState.isOpen || drawerState.isAnimationRunning) {
+                        MedWheelDrawerContent(
+                            themeMode = uiState.themeMode,
+                            activeCalculator = uiState.activeCalculator,
+                            departments = viewModel.sortedDepartments,
+                            calculatorsByDepartment = viewModel.calculatorsByDepartment,
+                            toolCounts = viewModel.departmentToolCounts,
+                            totalToolCount = CalculatorRegistry.all.size,
+                            onSelectTheme = { mode -> viewModel.setThemeMode(mode) },
+                            onJumpToDepartment = { deptId ->
+                                viewModel.openDepartment(deptId)
+                                scope.launch { drawerState.close() }
+                            },
+                            onJumpToCalculator = { calcId ->
+                                viewModel.openCalculator(calcId, fromPinnedOrSearch = false)
+                                scope.launch { drawerState.close() }
+                            }
+                        )
                     }
-                )
+                }
             }
         ) {
             val showBottomBar = !uiState.isInsideCanvas && !uiState.isInsideKitCard && !uiState.isSearchActive
@@ -271,96 +282,96 @@ fun MedWheelApp(
                                 }
                             )
                         } else {
-                            AnimatedContent(
-                                targetState = MainScreenRouteKey(
-                                    tab = uiState.activeTab,
-                                    wheelStep = uiState.wheelStep,
-                                    activeCalculatorId = uiState.activeCalculatorId,
-                                    activeKitBlockId = uiState.activeKitBlockId
-                                ),
-                                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                                label = "main_screen_transition"
-                            ) { route ->
-                                when (route.tab) {
-                                    MainTab.KIT -> {
-                                        val blockId = route.activeKitBlockId
-                                        val cardId = uiState.activeKitCardId
-                                        if (blockId != null && cardId != null) {
-                                            KitBlockScreen(
-                                                blockId = blockId,
-                                                activeCardId = cardId,
-                                                focusedDoseDrugId = uiState.focusedDoseDrugId,
-                                                isCardPinned = cardId in uiState.pinnedKitIds,
-                                                labUnitSystem = uiState.labUnitSystem,
-                                                onSelectCard = { viewModel.selectKitCard(it) },
-                                                onClearFocusedDoseDrug = { viewModel.clearFocusedDoseDrug() },
-                                                onSelectLabUnitSystem = { viewModel.setLabUnitSystem(it) },
-                                                onTogglePinCard = { viewModel.togglePinKitCard(it) },
-                                                onBack = { viewModel.navigateBack() }
-                                            )
-                                        } else {
-                                            KitHomeScreen(
-                                                onOpenBlock = { viewModel.openKitBlock(it) }
-                                            )
-                                        }
-                                    }
-
-                                    MainTab.PINNED -> {
-                                        PinnedScreen(
-                                            pinnedCalculators = uiState.pinnedCalculators,
-                                            pinnedKitCards = uiState.pinnedKitCards,
-                                            mostUsedCalculators = uiState.mostUsedCalculators,
-                                            onOpenCalculator = { id ->
-                                                viewModel.openCalculator(id, fromPinnedOrSearch = true)
-                                            },
-                                            onUnpinCalculator = { id -> viewModel.togglePin(id) },
-                                            onOpenKitCard = { id ->
-                                                viewModel.openKitCard(id, fromPinnedOrSearch = true)
-                                            },
-                                            onUnpinKitCard = { id -> viewModel.togglePinKitCard(id) }
+                            // Instant crisp switch (zero dual-screen Crossfade/AnimatedContent jank)
+                            when (uiState.activeTab) {
+                                MainTab.KIT -> {
+                                    val blockId = uiState.activeKitBlockId
+                                    val cardId = uiState.activeKitCardId
+                                    if (blockId != null && cardId != null) {
+                                        KitBlockScreen(
+                                            blockId = blockId,
+                                            activeCardId = cardId,
+                                            focusedDoseDrugId = uiState.focusedDoseDrugId,
+                                            isCardPinned = cardId in uiState.pinnedKitIds,
+                                            labUnitSystem = uiState.labUnitSystem,
+                                            onSelectCard = { viewModel.selectKitCard(it) },
+                                            onClearFocusedDoseDrug = { viewModel.clearFocusedDoseDrug() },
+                                            onSelectLabUnitSystem = { viewModel.setLabUnitSystem(it) },
+                                            onTogglePinCard = { viewModel.togglePinKitCard(it) },
+                                            onBack = { viewModel.navigateBack() }
+                                        )
+                                    } else {
+                                        KitHomeScreen(
+                                            onOpenBlock = { viewModel.openKitBlock(it) },
+                                            listState = kitHomeListState,
+                                            tier1Rows = viewModel.kitTier1Rows,
+                                            tier2Rows = viewModel.kitTier2Rows
                                         )
                                     }
+                                }
 
-                                    MainTab.CALCULATORS -> {
-                                        when (route.wheelStep) {
-                                            WheelStep.DEPARTMENTS -> {
-                                                DepartmentWheelScreen(
-                                                    focusedIndex = uiState.focusedDepartmentIndex,
-                                                    onFocusedIndexChanged = { viewModel.focusDepartment(it) },
-                                                    onOpenDepartment = { viewModel.openDepartment(it) }
-                                                )
-                                            }
+                                MainTab.PINNED -> {
+                                    PinnedScreen(
+                                        pinnedCalculators = uiState.pinnedCalculators,
+                                        pinnedKitCards = uiState.pinnedKitCards,
+                                        mostUsedCalculators = uiState.mostUsedCalculators,
+                                        onOpenCalculator = { id ->
+                                            viewModel.openCalculator(id, fromPinnedOrSearch = true)
+                                        },
+                                        onUnpinCalculator = { id -> viewModel.togglePin(id) },
+                                        onOpenKitCard = { id ->
+                                            viewModel.openKitCard(id, fromPinnedOrSearch = true)
+                                        },
+                                        onUnpinKitCard = { id -> viewModel.togglePinKitCard(id) },
+                                        listState = pinnedListState
+                                    )
+                                }
 
-                                            WheelStep.CALCULATORS -> {
-                                                CalculatorWheelScreen(
-                                                    departmentId = uiState.selectedDepartmentId,
-                                                    focusedCalculatorIndex = uiState.focusedCalculatorIndex,
-                                                    onFocusedCalculatorChanged = { viewModel.focusCalculator(it) },
-                                                    onOpenCalculator = { id ->
-                                                        viewModel.openCalculator(id, fromPinnedOrSearch = false)
-                                                    },
+                                MainTab.CALCULATORS -> {
+                                    when (uiState.wheelStep) {
+                                        WheelStep.DEPARTMENTS -> {
+                                            DepartmentWheelScreen(
+                                                departments = viewModel.sortedDepartments,
+                                                toolCounts = viewModel.departmentToolCounts,
+                                                focusedIndex = uiState.focusedDepartmentIndex,
+                                                wheelState = departmentWheelState,
+                                                onFocusedIndexChanged = { viewModel.focusDepartment(it) },
+                                                onOpenDepartment = { viewModel.openDepartment(it) }
+                                            )
+                                        }
+
+                                        WheelStep.CALCULATORS -> {
+                                            val deptCalcs = viewModel.calculatorsByDepartment[uiState.selectedDepartmentId]
+                                                .orEmpty()
+                                            CalculatorWheelScreen(
+                                                departmentId = uiState.selectedDepartmentId,
+                                                calculators = deptCalcs,
+                                                focusedCalculatorIndex = uiState.focusedCalculatorIndex,
+                                                onFocusedCalculatorChanged = { viewModel.focusCalculator(it) },
+                                                onOpenCalculator = { id ->
+                                                    viewModel.openCalculator(id, fromPinnedOrSearch = false)
+                                                },
+                                                onBack = { viewModel.navigateBack() }
+                                            )
+                                        }
+
+                                        WheelStep.CANVAS -> {
+                                            val calc = uiState.activeCalculator
+                                            if (calc != null) {
+                                                CalculatorCanvasScreen(
+                                                    calculator = calc,
+                                                    inputState = uiState.inputState,
+                                                    result = uiState.calculationResult,
+                                                    isPinned = calc.id in uiState.pinnedIds,
+                                                    onNumericChange = { id, v -> viewModel.updateNumericInput(id, v) },
+                                                    onUnitSelected = { id, idx -> viewModel.updateUnit(id, idx) },
+                                                    onChoiceSelected = { id, opt -> viewModel.updateChoice(id, opt) },
+                                                    onToggleCriterion = { id -> viewModel.toggleCriterion(id) },
+                                                    onDateSelected = { id, millis -> viewModel.updateDate(id, millis) },
+                                                    onTogglePin = { viewModel.togglePin(calc.id) },
+                                                    onClear = { viewModel.clearInputs() },
                                                     onBack = { viewModel.navigateBack() }
                                                 )
-                                            }
-
-                                            WheelStep.CANVAS -> {
-                                                val calc = uiState.activeCalculator
-                                                if (calc != null && route.activeCalculatorId == calc.id) {
-                                                    CalculatorCanvasScreen(
-                                                        calculator = calc,
-                                                        inputState = uiState.inputState,
-                                                        result = uiState.calculationResult,
-                                                        isPinned = calc.id in uiState.pinnedIds,
-                                                        onNumericChange = { id, v -> viewModel.updateNumericInput(id, v) },
-                                                        onUnitSelected = { id, idx -> viewModel.updateUnit(id, idx) },
-                                                        onChoiceSelected = { id, opt -> viewModel.updateChoice(id, opt) },
-                                                        onToggleCriterion = { id -> viewModel.toggleCriterion(id) },
-                                                        onDateSelected = { id, millis -> viewModel.updateDate(id, millis) },
-                                                        onTogglePin = { viewModel.togglePin(calc.id) },
-                                                        onClear = { viewModel.clearInputs() },
-                                                        onBack = { viewModel.navigateBack() }
-                                                    )
-                                                }
                                             }
                                         }
                                     }

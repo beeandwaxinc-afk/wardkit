@@ -4,12 +4,29 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Matching single-color minimalist stethoscope path for Android 13+ / One UI themed icons -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M45,27 C42.24,27 40,29.24 40,32 L40,36 L44.5,36 L44.5,32.5 C44.5,31.67 45.17,31 46,31 L62,31 C62.83,31 63.5,31.67 63.5,32.5 L63.5,36 L68,36 L68,32 C68,29.24 65.76,27 63,27 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#111111"
+        android:strokeWidth="4.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M34.5,27.5 L31.5,27.5 C29.5,27.5 28.5,28.8 28.5,30.8 L28.5,41.0 C28.5,49.2 34.3,54.8 41.5,54.8 C48.7,54.8 54.5,49.2 54.5,41.0 L54.5,30.8 C54.5,28.8 53.5,27.5 51.5,27.5 L48.5,27.5" />
     <path
-        android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M32,36 L76,36 C80.42,36 84,39.58 84,44 L84,72 C84,76.42 80.42,80 76,80 L32,80 C27.58,80 24,76.42 24,72 L24,44 C24,39.58 27.58,36 32,36 Z M50,46 L58,46 L58,54 L66,54 L66,62 L58,62 L58,70 L50,70 L50,62 L42,62 L42,54 L50,54 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#111111"
+        android:strokeWidth="4.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M41.5,54.8 L41.5,65.8 C41.5,74.2 48.4,80.5 57.0,80.5 C65.6,80.5 72.5,74.2 72.5,65.8 L72.5,56.0" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#111111"
+        android:strokeWidth="4.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M72.5,42.0 A7.0,7.0 0 1,0 72.5,56.0 A7.0,7.0 0 1,0 72.5,42.0 Z" />
+    <path
+        android:fillColor="#111111"
+        android:pathData="M72.5,46.8 A2.2,2.2 0 1,0 72.5,51.2 A2.2,2.2 0 1,0 72.5,46.8 Z" />
 </vector>

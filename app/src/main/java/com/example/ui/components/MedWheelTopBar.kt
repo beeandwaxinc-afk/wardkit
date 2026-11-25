@@ -263,7 +263,11 @@ fun SearchOverlayResults(
                         .fillMaxSize()
                         .testTag("search_results_list")
                 ) {
-                    items(shownKit, key = { it.key }) { hit ->
+                    items(
+                        items = shownKit,
+                        key = { it.key },
+                        contentType = { "search_kit_hit" }
+                    ) { hit ->
                         val block = KitRegistry.getBlock(hit.blockId)
                         val accent = if (isDark) block.palette.darkPrimary else block.palette.lightPrimary
 
@@ -323,7 +327,11 @@ fun SearchOverlayResults(
                         }
                     }
 
-                    items(shownCalc, key = { "calc_${it.id}" }) { calc ->
+                    items(
+                        items = shownCalc,
+                        key = { "calc_${it.id}" },
+                        contentType = { "search_calc_hit" }
+                    ) { calc ->
                         val dept = DepartmentRegistry.get(calc.departmentId)
                         val accent = if (isDark) dept.palette.darkPrimary else dept.palette.lightPrimary
 

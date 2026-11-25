@@ -1,21 +1,24 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Ward Kit R8 / ProGuard optimization rules
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Preserve offline SharedPreferences wrapper & enum keys
+-keep class com.example.data.MedWheelPreferences { *; }
+-keepclassmembers enum com.example.data.** {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+-keepclassmembers enum com.example.data.kit.** {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Preserve data models and registries cleanly
+-keep class com.example.data.** { *; }
+-keep class com.example.data.kit.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Preserve ViewModel constructor for ViewModelProvider reflection
+-keepclassmembers class * extends androidx.lifecycle.AndroidViewModel {
+    public <init>(android.app.Application);
+}
+
+# Suppress noisy optional library warnings
+-dontwarn kotlinx.coroutines.**

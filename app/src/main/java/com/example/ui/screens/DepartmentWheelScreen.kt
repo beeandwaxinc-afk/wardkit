@@ -1,9 +1,5 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +10,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -36,23 +34,34 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.data.CalculatorRegistry
 import com.example.data.Department
 import com.example.data.DepartmentId
-import com.example.data.DepartmentRegistry
 import com.example.ui.components.RotaryWheel
+import com.example.ui.theme.LocalMedWheelExtras
 
 @Composable
 fun DepartmentWheelScreen(
+    departments: List<Department>,
+    toolCounts: Map<DepartmentId, Int>,
     focusedIndex: Int,
+    wheelState: LazyListState = rememberLazyListState(initialFirstVisibleItemIndex = focusedIndex),
     onFocusedIndexChanged: (Int) -> Unit,
     onOpenDepartment: (DepartmentId) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val departments = DepartmentRegistry.all
-    val focusedDept = departments.getOrElse(focusedIndex) { departments.first() }
-    val toolCount = CalculatorRegistry.countForDepartment(focusedDept.id)
+    if (departments.isEmpty()) return
+
+    val safeIndex = focusedIndex.coerceIn(0, departments.lastIndex)
+    val focusedDept = departments[safeIndex]
+    val toolCount = toolCounts[focusedDept.id] ?: 0
     val haptic = LocalHapticFeedback.current
+    val isDark = LocalMedWheelExtras.current.isDark
+
+    // Apply per-department accent locally so wheel flings never re-theme the root Activity
+    val accentPrimary = if (isDark) focusedDept.palette.darkPrimary else focusedDept.palette.lightPrimary
+    val accentOnPrimary = if (isDark) focusedDept.palette.darkOnPrimary else focusedDept.palette.lightOnPrimary
+    val accentContainer = if (isDark) focusedDept.palette.darkContainer else focusedDept.palette.lightContainer
+    val accentOnContainer = if (isDark) focusedDept.palette.darkOnContainer else focusedDept.palette.lightOnContainer
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -74,12 +83,12 @@ fun DepartmentWheelScreen(
             ) {
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = accentContainer
                 ) {
                     Icon(
                         imageVector = focusedDept.icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = accentOnContainer,
                         modifier = Modifier
                             .padding(8.dp)
                             .size(22.dp)
@@ -90,9 +99,9 @@ fun DepartmentWheelScreen(
                     color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
                     Text(
-                        text = "${focusedIndex + 1} / ${departments.size} · $toolCount TOOLS",
+                        text = "${safeIndex + 1} / ${departments.size} · $toolCount TOOLS",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = accentPrimary,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
                     )
                 }
@@ -100,31 +109,25 @@ fun DepartmentWheelScreen(
 
             Spacer(Modifier.height(10.dp))
 
-            AnimatedContent(
-                targetState = focusedDept,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "dept_header_anim"
-            ) { dept ->
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = dept.fullName,
-                        style = MaterialTheme.typography.displaySmall.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 30.sp,
-                            lineHeight = 34.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = dept.subtitle,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = focusedDept.fullName,
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 30.sp,
+                        lineHeight = 34.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = focusedDept.subtitle,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
 
@@ -139,7 +142,7 @@ fun DepartmentWheelScreen(
         ) {
             RotaryWheel(
                 items = departments,
-                initialIndex = focusedIndex,
+                initialIndex = safeIndex,
                 itemHeight = 84.dp,
                 wheelTag = "department_wheel",
                 keySelector = { it.id.name },
@@ -147,8 +150,16 @@ fun DepartmentWheelScreen(
                 onCenteredItemTapped = { idx ->
                     onOpenDepartment(departments[idx].id)
                 },
+                listState = wheelState,
+                accentPrimary = accentPrimary,
+                accentContainer = accentContainer,
                 modifier = Modifier.weight(1f)
             ) { dept: Department, isCentered: Boolean ->
+                val itemColor = if (isCentered) {
+                    if (isDark) dept.palette.darkPrimary else dept.palette.lightPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
                 Text(
                     text = dept.wheelName,
                     style = MaterialTheme.typography.displayMedium.copy(
@@ -156,8 +167,7 @@ fun DepartmentWheelScreen(
                         fontSize = 34.sp,
                         lineHeight = 38.sp
                     ),
-                    color = if (isCentered) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface,
+                    color = itemColor,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -172,8 +182,8 @@ fun DepartmentWheelScreen(
                 },
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = accentPrimary,
+                    contentColor = accentOnPrimary
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
