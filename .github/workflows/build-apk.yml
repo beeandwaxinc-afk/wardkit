@@ -28,11 +28,24 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          cache-provider: basic
 
       - name: Build R8-optimized Release APK
-        run: gradle assembleRelease --no-daemon
+        run: |
+          keytool -genkeypair -noprompt \
+            -keystore my-upload-key.jks \
+            -storepass android \
+            -alias wardkit \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=WardKit,O=WardKit,C=US"
+
+          gradle assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$PWD/my-upload-key.jks" \
+            -Pandroid.injected.signing.store.password=android \
+            -Pandroid.injected.signing.key.alias=wardkit \
+            -Pandroid.injected.signing.key.password=android
 
       - name: Align and sign Release APK
         id: sign
@@ -84,7 +97,7 @@ jobs:
 
       - name: Clean up temporary files
         if: always()
-        run: rm -f "$RUNNER_TEMP/sideload.jks" "$RUNNER_TEMP/aligned.apk"
+        run: rm -f my-upload-key.jks "$RUNNER_TEMP/sideload.jks" "$RUNNER_TEMP/aligned.apk"
 
       - name: Upload signed Release APK artifact
         uses: actions/upload-artifact@v4
