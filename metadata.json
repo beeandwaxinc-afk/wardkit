@@ -1,0 +1,8 @@
+{
+  "name": "Ward Kit",
+  "description": "100% offline clinical calculator and bedside ward quick-reference toolkit with rotary wheel navigation and expressive Bento cards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

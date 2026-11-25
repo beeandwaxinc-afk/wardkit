@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="68"
+    android:viewportHeight="68">
+    <!-- Tightly framed Ward Kit emblem matching the adaptive icon for in-app branding (Side Drawer) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M25,7 C22.24,7 20,9.24 20,12 L20,16 L24.5,16 L24.5,12.5 C24.5,11.67 25.17,11 26,11 L42,11 C42.83,11 43.5,11.67 43.5,12.5 L43.5,16 L48,16 L48,12 C48,9.24 45.76,7 43,7 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,16 L56,16 C60.42,16 64,19.58 64,24 L64,52 C64,56.42 60.42,60 56,60 L12,60 C7.58,60 4,56.42 4,52 L4,24 C4,19.58 7.58,16 12,16 Z M30,26 L38,26 L38,34 L46,34 L46,42 L38,42 L38,50 L30,50 L30,42 L22,42 L22,34 L30,34 Z" />
+</vector>
